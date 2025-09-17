@@ -3,15 +3,15 @@ import { DEMO_INTERVIEWS } from "@/constants/demoData";
 
 const TestPage = () => {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-900">
           AI Interview System - Gemini Voice Conversation
         </h1>
         
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4">🎯 Features Implemented:</h2>
-          <ul className="space-y-2 text-sm">
+          <h2 className="text-lg font-semibold mb-4 text-blue-900">🎯 Features Implemented:</h2>
+          <ul className="space-y-2 text-sm text-blue-800">
             <li>✅ Gemini API integration for intelligent conversation</li>
             <li>✅ Web Speech API for Speech-to-Text (browser native)</li>
             <li>✅ Web Speech API for Text-to-Speech (browser native)</li>
@@ -26,10 +26,10 @@ const TestPage = () => {
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-4">📋 Setup Requirements:</h2>
-          <ol className="space-y-2 text-sm list-decimal list-inside">
-            <li>Create a <code>.env.local</code> file with your Google Gemini API key:</li>
-            <li className="ml-4"><code>GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here</code></li>
+          <h2 className="text-lg font-semibold mb-4 text-yellow-900">📋 Setup Requirements:</h2>
+          <ol className="space-y-2 text-sm list-decimal list-inside text-yellow-800">
+            <li>Create a <code className="bg-yellow-200 px-1 rounded text-yellow-900">.env.local</code> file with your Google Gemini API key:</li>
+            <li className="ml-4"><code className="bg-yellow-200 px-1 rounded text-yellow-900">GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here</code></li>
             <li>Make sure your browser supports Web Speech API (Chrome/Edge recommended)</li>
             <li>Allow microphone permissions when prompted</li>
             <li>Ensure you have speakers/headphones for audio output</li>
@@ -46,7 +46,7 @@ const TestPage = () => {
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{interview.role}</h3>
+                  <h3 className="font-semibold text-lg text-gray-900">{interview.role}</h3>
                   <p className="text-gray-600 text-sm">
                     {interview.level} • {interview.type}
                   </p>
@@ -78,8 +78,8 @@ const TestPage = () => {
         </div>
 
         <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">🎤 How It Works:</h2>
-          <ol className="space-y-3 text-sm list-decimal list-inside">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900">🎤 How It Works:</h2>
+          <ol className="space-y-3 text-sm list-decimal list-inside text-gray-800">
             <li><strong>Click "Start Voice Interview"</strong> - The AI will greet you and begin</li>
             <li><strong>Listen to the AI</strong> - Questions and responses will be spoken aloud</li>
             <li><strong>Speak your answers</strong> - The system automatically listens after the AI finishes</li>
@@ -91,8 +91,8 @@ const TestPage = () => {
         </div>
 
         <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">💡 Smart Silence Detection:</h2>
-          <ul className="space-y-2 text-sm">
+          <h2 className="text-lg font-semibold mb-4 text-green-900">💡 Smart Silence Detection:</h2>
+          <ul className="space-y-2 text-sm text-green-800">
             <li>• <strong>Thinking time</strong> - Take pauses to think, AI will wait</li>
             <li>• <strong>Auto-continue</strong> - After 2.5 seconds of silence, AI takes over</li>
             <li>• <strong>Natural flow</strong> - AI will encourage you, repeat questions, or ask follow-ups</li>

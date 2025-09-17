@@ -75,6 +75,13 @@ export class ConversationManager {
   clearConversation(interviewId: string): void {
     this.conversations.delete(interviewId);
     this.saveToStorage();
+    console.log(`Cleared conversation for interview: ${interviewId}`);
+  }
+
+  clearAllConversations(): void {
+    this.conversations.clear();
+    this.saveToStorage();
+    console.log("Cleared all conversations");
   }
 
   getAllConversations(): Map<string, ConversationMessage[]> {

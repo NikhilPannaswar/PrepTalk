@@ -23,74 +23,83 @@ const Feedback = async ({ params }: RouteParams) => {
   });
 
   return (
-    <section className="section-feedback">
+    <section className="section-feedback text-gray-900">
       <div className="flex flex-row justify-center">
-        <h1 className="text-4xl font-semibold">
+        <h1 className="text-4xl font-semibold text-gray-900">
           Feedback on the Interview -{" "}
           <span className="capitalize">{interview.role}</span> Interview
         </h1>
       </div>
 
-      <div className="flex flex-row justify-center ">
-        <div className="flex flex-row gap-5">
-          {/* Overall Impression */}
-          <div className="flex flex-row gap-2 items-center">
-            <Image src="/star.svg" width={22} height={22} alt="star" />
-            <p>
-              Overall Impression:{" "}
-              <span className="text-primary-200 font-bold">
-                {feedback?.totalScore}
-              </span>
-              /100
-            </p>
-          </div>
-
-          {/* Date */}
-          <div className="flex flex-row gap-2">
-            <Image src="/calendar.svg" width={22} height={22} alt="calendar" />
-            <p>
-              {feedback?.createdAt
-                ? dayjs(feedback.createdAt).format("MMM D, YYYY h:mm A")
-                : "N/A"}
-            </p>
-          </div>
+      {!feedback ? (
+        <div className="text-center py-8">
+          <p className="text-gray-600 mb-4">No feedback available yet.</p>
+          <p className="text-sm text-gray-500">Please complete an interview first to see feedback.</p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex flex-row justify-center ">
+            <div className="flex flex-row gap-5">
+              {/* Overall Impression */}
+              <div className="flex flex-row gap-2 items-center">
+                <Image src="/star.svg" width={22} height={22} alt="star" />
+                <p className="text-gray-800">
+                  Overall Impression:{" "}
+                  <span className="text-primary-200 font-bold">
+                    {feedback?.totalScore}
+                  </span>
+                  /100
+                </p>
+              </div>
 
-      <hr />
-
-      <p>{feedback?.finalAssessment}</p>
-
-      {/* Interview Breakdown */}
-      <div className="flex flex-col gap-4">
-        <h2>Breakdown of the Interview:</h2>
-        {feedback?.categoryScores?.map((category, index) => (
-          <div key={index}>
-            <p className="font-bold">
-              {index + 1}. {category.name} ({category.score}/100)
-            </p>
-            <p>{category.comment}</p>
+              {/* Date */}
+              <div className="flex flex-row gap-2">
+                <Image src="/calendar.svg" width={22} height={22} alt="calendar" />
+                <p className="text-gray-800">
+                  {feedback?.createdAt
+                    ? dayjs(feedback.createdAt).format("MMM D, YYYY h:mm A")
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className="flex flex-col gap-3">
-        <h3>Strengths</h3>
-        <ul>
-          {feedback?.strengths?.map((strength, index) => (
-            <li key={index}>{strength}</li>
-          ))}
-        </ul>
-      </div>
+          <hr />
 
-      <div className="flex flex-col gap-3">
-        <h3>Areas for Improvement</h3>
-        <ul>
-          {feedback?.areasForImprovement?.map((area, index) => (
-            <li key={index}>{area}</li>
-          ))}
-        </ul>
-      </div>
+          <p className="text-gray-800">{feedback?.finalAssessment}</p>
+
+          {/* Interview Breakdown */}
+          <div className="flex flex-col gap-4">
+            <h2 className="text-gray-900">Breakdown of the Interview:</h2>
+            {feedback?.categoryScores?.map((category, index) => (
+              <div key={index}>
+                <p className="font-bold text-gray-900">
+                  {index + 1}. {category.name} ({category.score}/100)
+                </p>
+                <p className="text-gray-700">{category.comment}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <h3 className="text-gray-900">Strengths</h3>
+            <ul>
+              {feedback?.strengths?.map((strength, index) => (
+                <li key={index} className="text-gray-700">{strength}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <h3 className="text-gray-900">Areas for Improvement</h3>
+            <ul>
+              {feedback?.areasForImprovement?.map((area, index) => (
+                <li key={index} className="text-gray-700">{area}</li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
 
       <div className="buttons">
         <Button className="btn-secondary flex-1">

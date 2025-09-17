@@ -43,6 +43,7 @@ const GeminiAgent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentMessage, setCurrentMessage] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const isFinishedRef = useRef(false);
   
   // Services
   const sttService = useRef<SpeechToTextService | null>(null);
@@ -104,7 +105,7 @@ const GeminiAgent = ({
   };
 
   const startListeningCycle = async () => {
-    if (status === ConversationStatus.FINISHED || !sttService.current) return;
+    if (isFinishedRef.current || !sttService.current) return;
     
     try {
       setStatus(ConversationStatus.LISTENING);
@@ -122,52 +123,74 @@ const GeminiAgent = ({
         
         setStatus(ConversationStatus.PROCESSING);
         
-        if (conversationManager.current) {
-          // Ask AI to continue based on silence
-          const response = await conversationManager.current.sendMessageToGemini(
-            interviewId!,
-            "[User paused - please continue the conversation or ask a follow-up question]",
-            interviewContext,
-            userName
-          );
-          
-          await speakMessage(response);
-          
-          // Continue listening cycle after a short pause
-          setTimeout(() => {
-            if (status === ConversationStatus.ACTIVE) {
-              startListeningCycle();
-            }
-          }, 1500);
+        if (conversationManager.current && !isFinishedRef.current) {
+          try {
+            // Ask AI to continue based on silence
+            const response = await conversationManager.current.sendMessageToGemini(
+              interviewId!,
+              "[User paused - please continue the conversation or ask a follow-up question]",
+              interviewContext,
+              userName
+            );
+            
+            await speakMessage(response);
+            
+            // Continue listening cycle after AI speaks
+            setTimeout(() => {
+              if (!isFinishedRef.current) {
+                startListeningCycle();
+              }
+            }, 1500);
+          } catch (error) {
+            console.error("Error handling silence:", error);
+            // Retry listening if silence handling fails
+            setTimeout(() => {
+              if (!isFinishedRef.current) {
+                startListeningCycle();
+              }
+            }, 2000);
+          }
         }
       };
 
-      const userInput = await sttService.current.startListening(handleSilence);
-      
-      // If we got actual user input (not silence)
-      if (userInput && userInput.trim()) {
-        setIsListening(false);
-        setCurrentMessage(userInput);
-        setStatus(ConversationStatus.PROCESSING);
+      try {
+        const userInput = await sttService.current.startListening(handleSilence);
         
-        // Send to Gemini and get response
-        if (conversationManager.current) {
-          const response = await conversationManager.current.sendMessageToGemini(
-            interviewId!,
-            userInput,
-            interviewContext,
-            userName
-          );
+        // If we got actual user input (not silence)
+        if (userInput && userInput.trim()) {
+          setIsListening(false);
+          setCurrentMessage(userInput);
+          setStatus(ConversationStatus.PROCESSING);
           
-          await speakMessage(response);
-          
-          // Continue listening cycle
-          setTimeout(() => {
-            if (status === ConversationStatus.ACTIVE) {
-              startListeningCycle();
-            }
-          }, 1000);
+          // Send to Gemini and get response
+          if (conversationManager.current && !isFinishedRef.current) {
+            const response = await conversationManager.current.sendMessageToGemini(
+              interviewId!,
+              userInput,
+              interviewContext,
+              userName
+            );
+            
+            await speakMessage(response);
+            
+            // Continue listening cycle after AI response
+            setTimeout(() => {
+              if (!isFinishedRef.current) {
+                startListeningCycle();
+              }
+            }, 1000);
+          }
         }
+      } catch (speechError) {
+        console.error("Speech recognition error:", speechError);
+        setIsListening(false);
+        
+        // Retry listening after speech recognition error
+        setTimeout(() => {
+          if (!isFinishedRef.current) {
+            startListeningCycle();
+          }
+        }, 2000);
       }
       
     } catch (error) {
@@ -176,7 +199,7 @@ const GeminiAgent = ({
       
       // Retry listening after a short delay
       setTimeout(() => {
-        if (status === ConversationStatus.ACTIVE) {
+        if (!isFinishedRef.current) {
           startListeningCycle();
         }
       }, 2000);
@@ -208,6 +231,9 @@ const GeminiAgent = ({
 
   const endConversation = async () => {
     try {
+      // Set finished flag to stop all ongoing processes
+      isFinishedRef.current = true;
+      
       // Stop all services
       if (sttService.current) {
         sttService.current.stopListening();
@@ -220,21 +246,32 @@ const GeminiAgent = ({
       setIsListening(false);
       setIsSpeaking(false);
 
+      // Clear conversation from localStorage
+      if (conversationManager.current) {
+        conversationManager.current.clearConversation(interviewId!);
+      }
+
       // Save conversation as feedback
       if (type === "interview" && conversationManager.current) {
         const conversation = conversationManager.current.getConversation(interviewId!);
         
-        const { success, feedbackId: id } = await createFeedback({
-          interviewId: interviewId!,
-          userId: userId!,
-          transcript: conversation,
-          feedbackId,
-        });
+        // Only create feedback if there's actually a conversation
+        if (conversation.length > 0) {
+          const { success, feedbackId: id } = await createFeedback({
+            interviewId: interviewId!,
+            userId: userId!,
+            transcript: conversation,
+            feedbackId,
+          });
 
-        if (success && id) {
-          router.push(`/interview/${interviewId}/feedback`);
+          if (success && id) {
+            router.push(`/interview/${interviewId}/feedback`);
+          } else {
+            console.error("Error saving feedback");
+            router.push("/");
+          }
         } else {
-          console.error("Error saving feedback");
+          console.log("No conversation to save");
           router.push("/");
         }
       } else {
@@ -320,7 +357,7 @@ const GeminiAgent = ({
             <p
               className={cn(
                 "transition-opacity duration-500",
-                "animate-fadeIn opacity-100"
+                "animate-fadeIn opacity-100 text-gray-800"
               )}
             >
               {currentMessage}
@@ -332,7 +369,8 @@ const GeminiAgent = ({
       {/* Error Display */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+          <p className="font-semibold">Error:</p>
+          <p>{error}</p>
         </div>
       )}
 
