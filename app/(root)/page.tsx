@@ -33,6 +33,10 @@ async function Home() {
           <Button asChild className="btn-primary max-sm:w-full">
             <Link href="/interview">Start an Interview</Link>
           </Button>
+          
+          <Button asChild variant="outline" className="max-sm:w-full">
+            <Link href="/test">🎤 Try Voice Interview (Gemini Demo)</Link>
+          </Button>
         </div>
 
         <Image

@@ -80,6 +80,14 @@ export async function setSessionCookie(idToken: string){
 }
 
 export async function getCurrentUser(): Promise<User | null> {
+    // TEMPORARY: Bypass authentication for testing
+    return {
+        id: "test-user-123",
+        name: "Test User",
+        email: "test@example.com"
+    } as User;
+
+    /* Original auth code - commented out for testing
     const cookieStore = await cookies();
 
     const sessionCookie = cookieStore.get('session')?.value;
@@ -104,9 +112,15 @@ export async function getCurrentUser(): Promise<User | null> {
         console.log(e);
         return null;
     }
+    */
 }
 
 export async function isAuthenticated(){
+    // TEMPORARY: Always return true for testing
+    return true;
+    
+    /* Original code - commented out for testing
     const user = await getCurrentUser();
      return !!user; 
+    */
 }

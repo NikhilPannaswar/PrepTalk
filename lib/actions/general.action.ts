@@ -5,6 +5,7 @@ import { google } from "@ai-sdk/google";
 
 import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
+import { DEMO_INTERVIEW } from "@/constants/demoData";
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
@@ -49,6 +50,12 @@ export async function createFeedback(params: CreateFeedbackParams) {
       createdAt: new Date().toISOString(),
     };
 
+    // For demo interviews, just return success without saving to Firebase
+    if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
+      console.log("Demo feedback generated:", feedback);
+      return { success: true, feedbackId: `demo-feedback-${Date.now()}` };
+    }
+
     let feedbackRef;
 
     if (feedbackId) {
@@ -62,14 +69,28 @@ export async function createFeedback(params: CreateFeedbackParams) {
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
     console.error("Error saving feedback:", error);
+    // For demo mode, still return success
+    if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
+      return { success: true, feedbackId: `demo-feedback-${Date.now()}` };
+    }
     return { success: false };
   }
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
-  const interview = await db.collection("interviews").doc(id).get();
+  // For demo purposes, return demo data if id matches
+  if (id === "demo-interview-1" || id === "demo-interview-2") {
+    return DEMO_INTERVIEW as Interview;
+  }
 
-  return interview.data() as Interview | null;
+  try {
+    const interview = await db.collection("interviews").doc(id).get();
+    return interview.data() as Interview | null;
+  } catch (error) {
+    console.error("Error getting interview:", error);
+    // Fallback to demo data if Firebase fails
+    return DEMO_INTERVIEW as Interview;
+  }
 }
 
 export async function getFeedbackByInterviewId(
@@ -77,17 +98,27 @@ export async function getFeedbackByInterviewId(
 ): Promise<Feedback | null> {
   const { interviewId, userId } = params;
 
-  const querySnapshot = await db
-    .collection("feedback")
-    .where("interviewId", "==", interviewId)
-    .where("userId", "==", userId)
-    .limit(1)
-    .get();
+  // For demo purposes, return null for now (no existing feedback)
+  if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
+    return null;
+  }
 
-  if (querySnapshot.empty) return null;
+  try {
+    const querySnapshot = await db
+      .collection("feedback")
+      .where("interviewId", "==", interviewId)
+      .where("userId", "==", userId)
+      .limit(1)
+      .get();
 
-  const feedbackDoc = querySnapshot.docs[0];
-  return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+    if (querySnapshot.empty) return null;
+
+    const feedbackDoc = querySnapshot.docs[0];
+    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
+  } catch (error) {
+    console.error("Error getting feedback:", error);
+    return null;
+  }
 }
 
 export async function getLatestInterviews(

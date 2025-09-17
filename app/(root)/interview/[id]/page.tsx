@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
-import Agent from "@/components/Agent";
+import GeminiAgent from "@/components/GeminiAgent";
 import { getRandomInterviewCover } from "@/lib/utils";
 
 import {
@@ -47,13 +47,17 @@ const InterviewDetails = async ({ params }: RouteParams) => {
         </p>
       </div>
 
-      <Agent
+      <GeminiAgent
         userName={user?.name!}
         userId={user?.id}
         interviewId={id}
         type="interview"
         questions={interview.questions}
         feedbackId={feedback?.id}
+        role={interview.role}
+        level={interview.level}
+        techstack={interview.techstack}
+        interviewType={interview.type}
       />
     </>
   );
