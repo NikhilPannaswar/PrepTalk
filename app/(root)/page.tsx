@@ -27,16 +27,23 @@ async function Home() {
         <div className="flex flex-col gap-6 max-w-lg">
           <h2>Get Interview-Ready with AI-Powered Practice & Feedback</h2>
           <p className="text-lg">
-            Practice real interview questions & get instant feedback
+            Practice real interview questions & get instant feedback from our advanced AI interviewer
           </p>
 
           <Button asChild className="btn-primary max-sm:w-full">
-            <Link href="/interview">Start an Interview</Link>
+            <Link href="/interview">🚀 Start AI Interview Practice</Link>
           </Button>
           
           <Button asChild variant="outline" className="max-sm:w-full">
-            <Link href="/test">🎤 Try Voice Interview (Gemini Demo)</Link>
+            <Link href="/test">🎤 Demo Interviews (Quick Start)</Link>
           </Button>
+          
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>✨ <strong>New:</strong> Fully customizable interviews</p>
+            <p>🎯 Role-specific questions</p> 
+            <p>🔊 Voice interaction with AI</p>
+            <p>📊 Detailed performance feedback</p>
+          </div>
         </div>
 
         <Image

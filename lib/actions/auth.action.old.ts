@@ -19,10 +19,8 @@ export async function signUp(params: SignUpParams){
         }
         
         mockUsers[uid] = {
-            name, 
-            email,
-            createdAt: new Date().toISOString()
-        };
+            name, email
+        })
 
         return {
             success : true,
@@ -32,6 +30,12 @@ export async function signUp(params: SignUpParams){
     } catch (e : any) {
         console.error('Error creating a user', e);
         
+        if(e.code === 'auth/email-already-exists'){
+            return {
+                success : false,
+                message : 'This email is already in use'
+            }
+        }
         return {
             success: false,
             message: 'Failed to create an account'
@@ -42,64 +46,82 @@ export async function signUp(params: SignUpParams){
 export async function signIn(params: SignInParams){
     const { email, idToken } = params;
     try {
-        // Mock authentication - find user by email
-        const userRecord = Object.values(mockUsers).find((user: any) => user.email === email);
+        const userRecord = await auth.getUserByEmail(email);
         if(!userRecord){
             return {
                 success: false,
-                message: 'User not found. Please sign up first.'
+                message: 'User does not exist. Create an account.'
             }
         }
+        await setSessionCookie(idToken)
 
-        // Create mock session
-        const sessionId = `session-${Date.now()}`;
-        mockSessions[sessionId] = email;
-        
-        const cookieStore = await cookies();
-        cookieStore.set('session', sessionId, {
-            httpOnly: true,
-            secure: true,
-            maxAge: ONE_WEEK,
-            path: '/'
-        });
+    } catch (e) {
+        console.log(e);
 
-        return {
-            success: true,
-            message: 'Signed in successfully'
-        }
-        
-    } catch (e : any) {
-        console.error('Error signing in', e);
         return {
             success: false,
-            message: 'Authentication failed'
+            message: 'Failed to log into an account.'
         }
     }
 }
 
 export async function setSessionCookie(idToken: string){
-    // Mock implementation
-    const sessionId = `session-${Date.now()}`;
     const cookieStore = await cookies();
-    cookieStore.set('session', sessionId, {
+
+    const sessionCookie = await auth.createSessionCookie(idToken, {
+        expiresIn: ONE_WEEK * 1000,
+    })
+    cookieStore.set('session', sessionCookie, {
         maxAge: ONE_WEEK,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         path: '/',
         sameSite: 'lax'
-    });
+    })
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-    // Return test user for demo
+    // TEMPORARY: Bypass authentication for testing
     return {
         id: "test-user-123",
         name: "Test User",
         email: "test@example.com"
     } as User;
+
+    /* Original auth code - commented out for testing
+    const cookieStore = await cookies();
+
+    const sessionCookie = cookieStore.get('session')?.value;
+
+    if(!sessionCookie) return null;
+    try {
+
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        
+        const userRecord = await db.
+            collection('user')
+            .doc(decodedClaims.uid)
+            .get();
+
+            if(!userRecord.exists) return null;
+            return {
+                ...userRecord.data(),
+                id: userRecord.id,
+            } as User;
+        
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+    */
 }
 
 export async function isAuthenticated(){
-    // Always return true for demo
+    // TEMPORARY: Always return true for testing
     return true;
+    
+    /* Original code - commented out for testing
+    const user = await getCurrentUser();
+     return !!user; 
+    */
 }

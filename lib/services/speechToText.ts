@@ -50,7 +50,9 @@ export class SpeechToTextService {
   private recognition: SpeechRecognition | null = null;
   private isListening = false;
   private silenceTimer: NodeJS.Timeout | null = null;
-  private silenceThreshold = 2500; // 2.5 seconds of silence
+  private silenceThreshold = 3000; // 3 seconds of silence
+  private isUserSpeaking = false;
+  private lastSpeechTime: number = 0;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -100,13 +102,16 @@ export class SpeechToTextService {
           if (event.results[i].isFinal) {
             finalTranscript += transcript;
             hasSpoken = true;
+            this.lastSpeechTime = Date.now();
           } else {
             interimTranscript += transcript;
           }
         }
 
-        // If user is speaking, clear the silence timer
-        if (interimTranscript.trim() || finalTranscript.trim()) {
+        // User is actively speaking - clear silence timer and mark as speaking
+        if (interimTranscript.trim()) {
+          this.isUserSpeaking = true;
+          this.lastSpeechTime = Date.now();
           if (this.silenceTimer) {
             clearTimeout(this.silenceTimer);
             this.silenceTimer = null;
@@ -114,8 +119,9 @@ export class SpeechToTextService {
           hasSpoken = true;
         }
 
-        // If we have final transcript, start silence detection
-        if (finalTranscript.trim() && hasSpoken) {
+        // User finished a phrase - start silence detection only after final result
+        if (finalTranscript.trim() && event.results[event.results.length - 1]?.isFinal) {
+          this.isUserSpeaking = false;
           this.startSilenceDetection(onSilence);
         }
       };
@@ -139,8 +145,8 @@ export class SpeechToTextService {
       try {
         this.recognition.start();
         
-        // Start silence detection immediately if no speech detected
-        this.startSilenceDetection(onSilence);
+        // Don't start silence detection immediately - wait for user to start speaking
+        // Only start silence detection after we detect actual speech
       } catch (error) {
         this.cleanup();
         reject(error);
@@ -149,14 +155,21 @@ export class SpeechToTextService {
   }
 
   private startSilenceDetection(onSilence?: () => void): void {
+    // Don't start silence detection if user is currently speaking
+    if (this.isUserSpeaking) {
+      return;
+    }
+
     // Clear any existing timer
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
     }
 
-    // Start new silence timer
+    // Start new silence timer - only trigger if truly silent for 3 seconds
     this.silenceTimer = setTimeout(() => {
-      if (this.isListening) {
+      // Double-check: only proceed if user hasn't spoken recently and isn't currently speaking
+      const timeSinceLastSpeech = Date.now() - this.lastSpeechTime;
+      if (this.isListening && !this.isUserSpeaking && timeSinceLastSpeech >= this.silenceThreshold) {
         this.stopListening();
         if (onSilence) {
           onSilence();
@@ -167,6 +180,8 @@ export class SpeechToTextService {
 
   private cleanup(): void {
     this.isListening = false;
+    this.isUserSpeaking = false;
+    this.lastSpeechTime = 0;
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;

@@ -3,12 +3,19 @@
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 
-import { db } from "@/firebase/admin";
 import { feedbackSchema } from "@/constants";
-import { DEMO_INTERVIEW } from "@/constants/demoData";
+import { DEMO_INTERVIEW, DEMO_FEEDBACK } from "@/constants/demoData";
+
+// In-memory storage for demo purposes
+let interviewStorage: { [key: string]: Interview } = {};
+let feedbackStorage: { [key: string]: Feedback } = {};
+let feedbackUserMapping: { [key: string]: string } = {}; // feedbackId -> userId
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
+
+  console.log("Creating feedback for interview:", interviewId);
+  console.log("Transcript length:", transcript?.length || 0);
 
   try {
     const formattedTranscript = transcript
@@ -17,6 +24,8 @@ export async function createFeedback(params: CreateFeedbackParams) {
           `- ${sentence.role}: ${sentence.content}\n`
       )
       .join("");
+
+    console.log("Generating AI feedback...");
 
     const { object } = await generateObject({
       model: google("gemini-2.0-flash-001", {
@@ -40,8 +49,8 @@ export async function createFeedback(params: CreateFeedbackParams) {
     });
 
     const feedback = {
+      id: feedbackId || `feedback-${Date.now()}`,
       interviewId: interviewId,
-      userId: userId,
       totalScore: object.totalScore,
       categoryScores: object.categoryScores,
       strengths: object.strengths,
@@ -50,47 +59,36 @@ export async function createFeedback(params: CreateFeedbackParams) {
       createdAt: new Date().toISOString(),
     };
 
-    // For demo interviews, just return success without saving to Firebase
-    if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
-      console.log("Demo feedback generated:", feedback);
-      return { success: true, feedbackId: `demo-feedback-${Date.now()}` };
-    }
+    console.log("Generated feedback:", feedback.totalScore);
 
-    let feedbackRef;
+    // Store in memory for demo along with userId for reference
+    feedbackStorage[feedback.id] = feedback;
+    feedbackUserMapping[feedback.id] = userId;
 
-    if (feedbackId) {
-      feedbackRef = db.collection("feedback").doc(feedbackId);
-    } else {
-      feedbackRef = db.collection("feedback").doc();
-    }
-
-    await feedbackRef.set(feedback);
-
-    return { success: true, feedbackId: feedbackRef.id };
+    console.log("Feedback saved successfully");
+    return { success: true, feedbackId: feedback.id };
   } catch (error) {
-    console.error("Error saving feedback:", error);
-    // For demo mode, still return success
-    if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
-      return { success: true, feedbackId: `demo-feedback-${Date.now()}` };
-    }
+    console.error("Error creating feedback:", error);
     return { success: false };
   }
 }
 
 export async function getInterviewById(id: string): Promise<Interview | null> {
+  console.log("Getting interview by ID:", id);
+  
   // For demo purposes, return demo data if id matches
   if (id === "demo-interview-1" || id === "demo-interview-2") {
     return DEMO_INTERVIEW as Interview;
   }
 
-  try {
-    const interview = await db.collection("interviews").doc(id).get();
-    return interview.data() as Interview | null;
-  } catch (error) {
-    console.error("Error getting interview:", error);
-    // Fallback to demo data if Firebase fails
-    return DEMO_INTERVIEW as Interview;
+  // Check in-memory storage
+  const interview = interviewStorage[id];
+  if (interview) {
+    return interview;
   }
+
+  // Return demo interview as fallback
+  return DEMO_INTERVIEW as Interview;
 }
 
 export async function getFeedbackByInterviewId(
@@ -98,59 +96,47 @@ export async function getFeedbackByInterviewId(
 ): Promise<Feedback | null> {
   const { interviewId, userId } = params;
 
-  // For demo purposes, return null for now (no existing feedback)
+  console.log("Getting feedback for interview:", interviewId);
+
+  // For demo purposes, return demo feedback
   if (interviewId === "demo-interview-1" || interviewId === "demo-interview-2") {
-    return null;
+    return DEMO_FEEDBACK as Feedback;
   }
 
-  try {
-    const querySnapshot = await db
-      .collection("feedback")
-      .where("interviewId", "==", interviewId)
-      .where("userId", "==", userId)
-      .limit(1)
-      .get();
-
-    if (querySnapshot.empty) return null;
-
-    const feedbackDoc = querySnapshot.docs[0];
-    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
-  } catch (error) {
-    console.error("Error getting feedback:", error);
-    return null;
+  // Check in-memory storage
+  for (const [feedbackId, feedback] of Object.entries(feedbackStorage)) {
+    if (feedback.interviewId === interviewId && feedbackUserMapping[feedbackId] === userId) {
+      return feedback;
+    }
   }
+
+  return null;
 }
 
 export async function getLatestInterviews(
   params: GetLatestInterviewsParams
 ): Promise<Interview[] | null> {
-  const { userId, limit = 20 } = params;
-
-  const interviews = await db
-    .collection("interviews")
-    .orderBy("createdAt", "desc")
-    .where("finalized", "==", true)
-    .where("userId", "!=", userId)
-    .limit(limit)
-    .get();
-
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+  console.log("Getting latest interviews");
+  
+  // Return demo data for now
+  return [DEMO_INTERVIEW as Interview];
 }
 
 export async function getInterviewsByUserId(
   userId: string
 ): Promise<Interview[] | null> {
-  const interviews = await db
-    .collection("interviews")
-    .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
-    .get();
+  console.log("Getting interviews for user:", userId);
+  
+  // Return user's interviews from memory storage
+  const userInterviews = Object.values(interviewStorage)
+    .filter(interview => interview.userId === userId);
+  
+  // Include demo interview for demonstration
+  return [DEMO_INTERVIEW as Interview, ...userInterviews];
+}
 
-  return interviews.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Interview[];
+// Helper function to store interviews in memory
+export async function storeInterview(interview: Interview) {
+  console.log("Storing interview:", interview.id);
+  interviewStorage[interview.id] = interview;
 }

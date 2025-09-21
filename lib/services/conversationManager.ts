@@ -97,6 +97,9 @@ export class ConversationManager {
     try {
       const conversationHistory = this.getConversation(interviewId);
       
+      console.log("Sending to Gemini:", message);
+      console.log("Conversation history length:", conversationHistory.length);
+      
       const response = await fetch('/api/conversation', {
         method: 'POST',
         headers: {
@@ -110,20 +113,30 @@ export class ConversationManager {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
-        // Add both user message and assistant response to conversation
-        this.addUserMessage(interviewId, message);
+        // Only add user message if it's not a silence detection or system message
+        if (!message.includes("[SILENCE_DETECTED]") && !message.startsWith("[")) {
+          this.addUserMessage(interviewId, message);
+        }
+        
+        // Always add assistant response
         this.addAssistantMessage(interviewId, data.response);
         
+        console.log("AI response received:", data.response);
         return data.response;
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
-      throw error;
+      // Fallback response for errors
+      return "I apologize, but I'm having trouble processing that right now. Could you please repeat your response?";
     }
   }
 
@@ -131,10 +144,12 @@ export class ConversationManager {
     // Clear any existing conversation
     this.clearConversation(interviewId);
     
-    // Add initial system message
+    // Add initial system message without API call
     this.addSystemMessage(
       interviewId, 
-      `Interview started for ${userName}. Role: ${interviewContext.role}, Level: ${interviewContext.level}, Type: ${interviewContext.type}`
+      `Interview initialized for ${userName}. Role: ${interviewContext.role}, Level: ${interviewContext.level}, Type: ${interviewContext.type}, Tech: ${interviewContext.techstack.join(", ")}`
     );
+    
+    console.log("Conversation initialized for interview:", interviewId);
   }
 }
