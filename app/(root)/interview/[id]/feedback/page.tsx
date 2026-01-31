@@ -8,18 +8,23 @@ import {
   getInterviewById,
 } from "@/lib/actions/general.action";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const Feedback = async ({ params }: RouteParams) => {
   const { id } = await params;
-  const user = await getCurrentUser();
+
+  // Mock user data - no authentication required
+  const mockUser = {
+    name: "Test User",
+    id: "user-" + Date.now(),
+    email: "test@example.com"
+  };
 
   const interview = await getInterviewById(id);
   if (!interview) redirect("/");
 
   const feedback = await getFeedbackByInterviewId({
     interviewId: id,
-    userId: user?.id!,
+    userId: mockUser.id,
   });
 
   return (

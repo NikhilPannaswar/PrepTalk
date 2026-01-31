@@ -20,7 +20,7 @@ enum ConversationStatus {
   FINISHED = "FINISHED",
 }
 
-const GeminiAgent = ({
+const OllamaAgent = ({
   userName,
   userId,
   interviewId,
@@ -78,6 +78,19 @@ const GeminiAgent = ({
     try {
       if (!conversationManager.current) return;
       
+      // Request microphone permission first
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("✅ Microphone access granted");
+        // Stop the stream immediately after permission check
+        stream.getTracks().forEach(track => track.stop());
+      } catch (micError) {
+        console.error("❌ Microphone access denied:", micError);
+        setError("🎤 Microphone access is required for the interview. Please click 'Allow' when prompted and refresh the page if needed.");
+        setCurrentMessage("Please allow microphone access to continue with the interview. Look for the microphone icon in your browser's address bar.");
+        return;
+      }
+      
       setStatus(ConversationStatus.ACTIVE);
       setError("");
       
@@ -104,7 +117,7 @@ const GeminiAgent = ({
       
     } catch (error) {
       console.error("Error starting conversation:", error);
-      setError("Failed to start conversation");
+      setError("Failed to start conversation. Please check your microphone and try again.");
       setStatus(ConversationStatus.INACTIVE);
     }
   };
@@ -120,11 +133,12 @@ const GeminiAgent = ({
     try {
       setStatus(ConversationStatus.LISTENING);
       setIsListening(true);
-      setCurrentMessage("I'm listening... Take your time to answer completely.");
+      setError(""); // Clear any previous errors
+      setCurrentMessage("🎤 I'm listening... Please speak clearly and take your time to answer completely.");
       
       // Handle silence detection - AI continues if user doesn't speak for 3 seconds
       const handleSilence = async () => {
-        console.log("⏱️ 3-second silence detected - AI taking over conversation");
+        console.log("⏱️ Silence detected - AI taking over conversation");
         setIsListening(false);
         setStatus(ConversationStatus.SILENCE_DETECTED);
         setCurrentMessage("I see you're thinking... Let me help guide the conversation.");
@@ -132,88 +146,122 @@ const GeminiAgent = ({
         // Short delay to show silence detection
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        setStatus(ConversationStatus.PROCESSING);
-        
-        if (conversationManager.current && !isFinishedRef.current) {
-          try {
-            console.log("🤖 Asking AI to handle silence");
-            // Ask AI to continue based on silence
-            const response = await conversationManager.current.sendMessageToGemini(
-              interviewId!,
-              "[SILENCE_DETECTED] The candidate paused for 3+ seconds. Please continue the conversation by either rephrasing the question, providing encouragement, or asking a follow-up question to keep the interview flowing naturally.",
-              interviewContext,
-              userName
-            );
-            
-            await speakMessage(response);
-            
-            // Continue listening cycle after AI speaks
-            setTimeout(() => {
-              if (!isFinishedRef.current) {
-                startListeningCycle();
-              }
-            }, 2000);
-          } catch (error) {
-            console.error("Error handling silence:", error);
-            // Retry listening if silence handling fails
-            setTimeout(() => {
-              if (!isFinishedRef.current) {
-                startListeningCycle();
-              }
-            }, 2000);
+        if (!isFinishedRef.current) {
+          setStatus(ConversationStatus.PROCESSING);
+          
+          if (conversationManager.current) {
+            try {
+              console.log("🤖 Asking AI to handle silence");
+              const response = await conversationManager.current.sendMessageToOllama(
+                interviewId!,
+                "[SILENCE_DETECTED] The candidate paused. Please continue the conversation by either rephrasing the question, providing encouragement, or asking a follow-up question to keep the interview flowing naturally.",
+                interviewContext,
+                userName
+              );
+              
+              await speakMessage(response);
+              
+              // Continue listening cycle after AI speaks
+              setTimeout(() => {
+                if (!isFinishedRef.current) {
+                  startListeningCycle();
+                }
+              }, 2000);
+            } catch (error) {
+              console.error("Error handling silence:", error);
+              setError("Had trouble processing. Let's continue...");
+              // Retry listening if silence handling fails
+              setTimeout(() => {
+                if (!isFinishedRef.current) {
+                  startListeningCycle();
+                }
+              }, 2000);
+            }
           }
         }
       };
 
       try {
-        // Start listening with 3-second silence detection
-        console.log("🔊 Setting up speech recognition with 3-second silence threshold");
-        sttService.current.setSilenceThreshold(3000); // 3 seconds
+        // Start listening with silence detection
+        console.log("🔊 Setting up speech recognition");
+        sttService.current.setSilenceThreshold(3000); // 3 seconds for better flow
         const userInput = await sttService.current.startListening(handleSilence);
         
         // If we got actual user input (not silence)
-        if (userInput && userInput.trim()) {
+        if (userInput && userInput.trim() && !isFinishedRef.current) {
           console.log("🎤 User input received:", userInput);
           setIsListening(false);
-          setCurrentMessage(`Processing your response: "${userInput.slice(0, 50)}${userInput.length > 50 ? '...' : ''}"`);
+          setCurrentMessage(`Processing your response...`);
           setStatus(ConversationStatus.PROCESSING);
           
           // Send user input to Gemini and get AI response
-          if (conversationManager.current && !isFinishedRef.current) {
-            console.log("💬 Sending to conversation manager");
-            const response = await conversationManager.current.sendMessageToGemini(
-              interviewId!,
-              userInput,
-              interviewContext,
-              userName
-            );
-            
-            console.log("🤖 AI response generated:", response.substring(0, 100));
-            
-            console.log("🗣️ Starting AI speech");
-            await speakMessage(response);
-            
-            // Wait longer before next listening cycle to give natural pause
-            setTimeout(() => {
-              if (!isFinishedRef.current) {
-                console.log("🔄 Continuing to next listening cycle");
-                startListeningCycle();
-              }
-            }, 1500);
+          if (conversationManager.current) {
+            try {
+              console.log("💬 Sending to conversation manager");
+              const response = await conversationManager.current.sendMessageToOllama(
+                interviewId!,
+                userInput,
+                interviewContext,
+                userName
+              );
+              
+              console.log("🤖 AI response generated");
+              
+              await speakMessage(response);
+              
+              // Continue to next listening cycle
+              setTimeout(() => {
+                if (!isFinishedRef.current) {
+                  console.log("🔄 Continuing to next listening cycle");
+                  startListeningCycle();
+                }
+              }, 1500);
+            } catch (apiError) {
+              console.error("API Error:", apiError);
+              setError("Had trouble processing your response. Let's continue...");
+              
+              // Fallback response
+              await speakMessage("I apologize, I had trouble processing that. Could you please try again?");
+              
+              setTimeout(() => {
+                if (!isFinishedRef.current) {
+                  startListeningCycle();
+                }
+              }, 2000);
+            }
           }
         }
       } catch (speechError) {
         console.error("Speech recognition error:", speechError);
         setIsListening(false);
-        setError("Speech recognition failed. Please try again or check your microphone.");
         
-        // Retry listening after speech recognition error
-        setTimeout(() => {
-          if (!isFinishedRef.current) {
-            setError(""); // Clear error before retrying
-            startListeningCycle();
-          }
-        }, 3000);
+        const errorMessage = speechError instanceof Error ? speechError.message : String(speechError);
+        
+        if (errorMessage.includes('not-allowed') || errorMessage.includes('denied')) {
+          setError("🎤 Microphone access denied. Please allow microphone permission and refresh the page.");
+          setCurrentMessage("Unable to access microphone. Please check your browser settings.");
+        } else if (errorMessage.includes('no-speech')) {
+          setError("No speech detected. Please try speaking louder or closer to your microphone.");
+          setCurrentMessage("I didn't hear anything. Please try again.");
+          // Auto-retry after a short delay
+          setTimeout(() => {
+            if (!isFinishedRef.current) {
+              setError("");
+              startListeningCycle();
+            }
+          }, 2000);
+        } else {
+          setError("Speech recognition failed. Let me try again...");
+          setCurrentMessage("Having trouble hearing you. Please check your microphone and try again.");
+          
+          // Retry listening after speech recognition error
+          setTimeout(() => {
+            if (!isFinishedRef.current) {
+              setError("");
+              startListeningCycle();
+            }
+          }, 2000);
+        }
       }
       
     } catch (error) {
@@ -389,15 +437,11 @@ const GeminiAgent = ({
 
       <div className="call-view">
         {/* AI Interviewer Card */}
-        <div className="card-interviewer">
-          <div className="avatar">
-            <Image
-              src="/ai-avatar.png"
-              alt="AI Interviewer"
-              width={65}
-              height={54}
-              className="object-cover"
-            />
+        <div className="card-interviewer bg-gray-800 rounded-lg p-6 flex flex-col items-center">
+          <div className="avatar mb-4">
+            <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-2xl">🤖</span>
+            </div>
             {isSpeaking && <span className="animate-speak" />}
           </div>
           <h3>AI Interviewer</h3>
@@ -433,26 +477,51 @@ const GeminiAgent = ({
 
       {/* Current Message Display */}
       {currentMessage && (
-        <div className="transcript-border">
-          <div className="transcript">
-            <p
-              className={cn(
-                "transition-opacity duration-500",
-                "animate-fadeIn opacity-100 text-gray-800"
-              )}
-            >
+        <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 mb-4">
+          <div className="text-center">
+            <p className="text-gray-200 text-base leading-relaxed mb-3">
               {currentMessage}
             </p>
+            
+            {/* Status indicator */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {isListening && (
+                <div className="flex items-center gap-2 text-blue-400">
+                  <div className="animate-pulse w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span className="text-sm font-medium">🎤 Listening for your response...</span>
+                </div>
+              )}
+              {isSpeaking && (
+                <div className="flex items-center gap-2 text-purple-400">
+                  <div className="animate-pulse w-2 h-2 bg-purple-400 rounded-full"></div>
+                  <span className="text-sm font-medium">🗣️ AI is speaking...</span>
+                </div>
+              )}
+              {status === ConversationStatus.PROCESSING && (
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <div className="animate-spin w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full"></div>
+                  <span className="text-sm font-medium">Processing...</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p className="font-semibold">Error:</p>
-          <p>{error}</p>
-          <p className="text-sm mt-2">Make sure your browser supports speech recognition and you've granted microphone permissions.</p>
+        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4 mb-4">
+          <p className="text-red-200 font-semibold mb-2">⚠️ Error:</p>
+          <p className="text-red-300 mb-3">{error}</p>
+          <div className="bg-red-800/50 rounded p-3">
+            <p className="text-red-200 text-sm font-medium mb-2">💡 Troubleshooting Tips:</p>
+            <ul className="text-red-300 text-sm space-y-1 list-disc list-inside">
+              <li>Allow microphone access when prompted</li>
+              <li>Use Chrome or Edge browser for best results</li>
+              <li>Ensure you're in a quiet environment</li>
+              <li>Speak clearly and wait for the listening indicator</li>
+            </ul>
+          </div>
         </div>
       )}
 
@@ -507,4 +576,4 @@ const GeminiAgent = ({
   );
 };
 
-export default GeminiAgent;
+export default OllamaAgent;

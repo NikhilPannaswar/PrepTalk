@@ -1,18 +1,25 @@
 import Link from "next/link";
 import { DEMO_INTERVIEWS } from "@/constants/demoData";
+import SpeechDebugTester from "@/components/SpeechDebugTester";
 
 const TestPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 bg-white min-h-screen">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-8 text-gray-900">
-          AI Interview System - Gemini Voice Conversation
+          AI Interview System - Ollama Mistral Voice Conversation
         </h1>
+        
+        {/* Speech Debug Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">🎤 Speech Recognition Test</h2>
+          <SpeechDebugTester />
+        </div>
         
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
           <h2 className="text-lg font-semibold mb-4 text-blue-900">🎯 Features Implemented:</h2>
           <ul className="space-y-2 text-sm text-blue-800">
-            <li>✅ Gemini API integration for intelligent conversation</li>
+            <li>✅ Ollama Mistral integration for intelligent conversation</li>
             <li>✅ Web Speech API for Speech-to-Text (browser native)</li>
             <li>✅ Web Speech API for Text-to-Speech (browser native)</li>
             <li>✅ Continuous conversation with context retention</li>
@@ -28,8 +35,8 @@ const TestPage = () => {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
           <h2 className="text-lg font-semibold mb-4 text-yellow-900">📋 Setup Requirements:</h2>
           <ol className="space-y-2 text-sm list-decimal list-inside text-yellow-800">
-            <li>Create a <code className="bg-yellow-200 px-1 rounded text-yellow-900">.env.local</code> file with your Google Gemini API key:</li>
-            <li className="ml-4"><code className="bg-yellow-200 px-1 rounded text-yellow-900">GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here</code></li>
+            <li>Install and start Ollama with Mistral model:</li>
+            <li className="ml-4"><code className="bg-yellow-200 px-1 rounded text-yellow-900">ollama pull mistral && ollama serve</code></li>
             <li>Make sure your browser supports Web Speech API (Chrome/Edge recommended)</li>
             <li>Allow microphone permissions when prompted</li>
             <li>Ensure you have speakers/headphones for audio output</li>

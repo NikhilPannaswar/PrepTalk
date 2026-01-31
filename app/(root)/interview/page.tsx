@@ -1,8 +1,12 @@
 import InterviewSetup from "@/components/InterviewSetup";
-import { getCurrentUser } from "@/lib/actions/auth.action";
 
 const Page = async () => {
-  const user = await getCurrentUser();
+  // Mock user data - no authentication required
+  const mockUser = {
+    name: "Test User",
+    id: "user-" + Date.now(),
+    email: "test@example.com"
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -38,8 +42,8 @@ const Page = async () => {
         </div>
 
         <InterviewSetup
-          userName={user?.name!}
-          userId={user?.id!}
+          userName={mockUser.name}
+          userId={mockUser.id}
         />
       </div>
     </div>

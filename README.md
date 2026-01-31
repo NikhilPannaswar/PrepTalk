@@ -1,6 +1,6 @@
 # PrepTalk - AI-Powered Interview Practice Platform
 
-An advanced interview preparation platform powered by Google's Gemini AI, featuring real-time voice interaction and personalized feedback.
+An advanced interview preparation platform powered by Ollama's Mistral AI, featuring real-time voice interaction and personalized feedback.
 
 ## 🚀 Features
 
@@ -30,15 +30,21 @@ An advanced interview preparation platform powered by Google's Gemini AI, featur
 - Node.js 18+ 
 - Chrome or Edge browser (for optimal speech recognition)
 - Microphone access
+- Ollama running locally with Mistral model
 
 ### Environment Variables
 Create a `.env.local` file:
 ```bash
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key_here
+# Ollama is used locally, no API key required
+# Make sure Ollama is running on http://localhost:11434
 ```
 
 ### Installation
 ```bash
+# Install Ollama and pull Mistral model
+# Visit https://ollama.com/download
+ollama pull mistral
+
 # Install dependencies
 npm install
 
@@ -103,8 +109,8 @@ npm start
 - **Web Speech APIs** for voice interaction
 
 ### AI Integration
-- **Google Gemini 2.0** for conversation and analysis
-- **AI SDK** for structured responses
+- **Ollama Mistral** for conversation and analysis
+- **Local AI processing** for privacy and control
 - **Custom conversation management** for context retention
 
 ### Key Components
@@ -130,9 +136,8 @@ npm start
 
 ### Key Technologies
 - Next.js 15 with Turbopack
-- Google Gemini AI SDK
+- Ollama Mistral AI
 - Web Speech API
-- Firebase (authentication & storage)
 - TypeScript & Tailwind CSS
 
 ### Project Structure
@@ -152,7 +157,7 @@ npm start
   └── actions/             # Server actions
 
 /app/api
-  └── conversation/        # Gemini AI integration
+  └── conversation/        # Ollama AI integration
 ```
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).

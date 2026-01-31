@@ -88,7 +88,7 @@ export class ConversationManager {
     return this.conversations;
   }
 
-  async sendMessageToGemini(
+  async sendMessageToOllama(
     interviewId: string, 
     message: string, 
     interviewContext: InterviewContext,
@@ -97,7 +97,7 @@ export class ConversationManager {
     try {
       const conversationHistory = this.getConversation(interviewId);
       
-      console.log("Sending to Gemini:", message);
+      console.log("Sending to Ollama:", message);
       console.log("Conversation history length:", conversationHistory.length);
       
       const response = await fetch('/api/conversation', {
@@ -134,7 +134,7 @@ export class ConversationManager {
         throw new Error(data.error || 'Failed to get response');
       }
     } catch (error) {
-      console.error('Error sending message to Gemini:', error);
+      console.error('Error sending message to Ollama:', error);
       // Fallback response for errors
       return "I apologize, but I'm having trouble processing that right now. Could you please repeat your response?";
     }

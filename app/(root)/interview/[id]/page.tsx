@@ -1,27 +1,31 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
-import GeminiAgent from "@/components/GeminiAgent";
+import OllamaAgent from "@/components/GeminiAgent";
 import { getRandomInterviewCover } from "@/lib/utils";
 
 import {
   getFeedbackByInterviewId,
   getInterviewById,
 } from "@/lib/actions/general.action";
-import { getCurrentUser } from "@/lib/actions/auth.action";
 import DisplayTechIcons from "@/components/DisplayTechIcons";
 
 const InterviewDetails = async ({ params }: RouteParams) => {
   const { id } = await params;
 
-  const user = await getCurrentUser();
+  // Mock user data - no authentication required
+  const mockUser = {
+    name: "Test User",
+    id: "user-" + Date.now(),
+    email: "test@example.com"
+  };
 
   const interview = await getInterviewById(id);
   if (!interview) redirect("/");
 
   const feedback = await getFeedbackByInterviewId({
     interviewId: id,
-    userId: user?.id!,
+    userId: mockUser.id,
   });
 
   return (
@@ -47,7 +51,7 @@ const InterviewDetails = async ({ params }: RouteParams) => {
         </p>
       </div>
 
-      <GeminiAgent
+      <OllamaAgent
         userName={user?.name!}
         userId={user?.id}
         interviewId={id}

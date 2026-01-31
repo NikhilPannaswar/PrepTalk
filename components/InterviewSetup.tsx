@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import GeminiAgent from "@/components/GeminiAgent";
+import { storeInterview } from "@/lib/actions/general.action";
 
 interface InterviewSetupProps {
   userName: string;
@@ -52,6 +53,7 @@ const TECH_STACKS = {
 
 const InterviewSetup = ({ userName, userId }: InterviewSetupProps) => {
   const [interviewStarted, setInterviewStarted] = useState(false);
+  const [currentInterviewId, setCurrentInterviewId] = useState<string>("");
   const [config, setConfig] = useState<InterviewConfig>({
     role: "Frontend Developer",
     level: "Mid-Level", 
@@ -217,21 +219,45 @@ const InterviewSetup = ({ userName, userId }: InterviewSetupProps) => {
     return shuffleArray(selectedQuestions, randomSeed + 100).slice(0, Math.min(selectedQuestions.length, 8));
   };
 
-  const startInterview = () => {
+  const startInterview = async () => {
+    const generatedQuestions = generateQuestions(config);
+    const interviewId = `interview-${Date.now()}-${userId}`;
+    
     setConfig(prev => ({
       ...prev,
-      customQuestions: generateQuestions(prev)
+      customQuestions: generatedQuestions
     }));
+    
+    // Store interview data for feedback generation
+    const interviewData: Interview = {
+      id: interviewId,
+      role: config.role,
+      level: config.level,
+      type: config.type,
+      techstack: config.techstack,
+      questions: generatedQuestions,
+      userId: userId,
+      createdAt: new Date().toISOString(),
+      finalized: false
+    };
+    
+    try {
+      await storeInterview(interviewData);
+      console.log("Interview stored successfully:", interviewId);
+    } catch (error) {
+      console.error("Error storing interview:", error);
+    }
+    
+    setCurrentInterviewId(interviewId);
     setInterviewStarted(true);
   };
 
-  if (interviewStarted) {
-    const interviewId = `interview-${Date.now()}-${userId}`;
+  if (interviewStarted && currentInterviewId) {
     return (
       <GeminiAgent
         userName={userName}
         userId={userId}
-        interviewId={interviewId}
+        interviewId={currentInterviewId}
         type="interview"
         questions={config.customQuestions || []}
         role={config.role}

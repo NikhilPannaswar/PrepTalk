@@ -1,5 +1,3 @@
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
 import { NextRequest } from "next/server";
 
 export interface ConversationMessage {
@@ -127,15 +125,31 @@ Response Guidelines:
       );
     }
 
-    console.log("🤖 Calling Gemini API...");
-    const { text: response } = await generateText({
-      model: google("gemini-2.0-flash-001"),
-      messages: validMessages,
-      temperature: 0.6,
-      maxTokens: 120,
+    console.log("🤖 Calling Ollama API...");
+    
+    // Build the prompt with conversation history
+    const conversationPrompt = validMessages
+      .map((msg) => `${msg.role === "user" ? "Candidate" : msg.role === "system" ? "System" : "Interviewer"}: ${msg.content}`)
+      .join("\n");
+
+    const res = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "mistral",
+        prompt: conversationPrompt,
+        stream: false,
+      }),
     });
 
-    console.log("✅ Gemini response received:", response.substring(0, 100));
+    if (!res.ok) {
+      throw new Error(`Ollama API error! status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const response = data.response;
+
+    console.log("✅ Ollama response received:", response.substring(0, 100));
 
     const cleanedResponse = response
       .replace(/\*/g, "")
@@ -155,7 +169,7 @@ Response Guidelines:
       shouldEndInterview: userResponses >= 8,
     });
   } catch (error) {
-    console.error("❌ Gemini API Error:", error);
+    console.error("❌ Ollama API Error:", error);
     return Response.json(
       { success: false, error: "Failed to generate response" },
       { status: 500 }

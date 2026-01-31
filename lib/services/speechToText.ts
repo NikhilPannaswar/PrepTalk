@@ -60,9 +60,10 @@ export class SpeechToTextService {
       
       if (SpeechRecognition) {
         this.recognition = new SpeechRecognition();
-        this.recognition.continuous = true; // Keep listening continuously
+        this.recognition.continuous = false; // Changed to false for better control
         this.recognition.interimResults = true; // Get partial results
         this.recognition.lang = 'en-US';
+        this.recognition.maxAlternatives = 1;
       }
     }
   }
@@ -74,24 +75,30 @@ export class SpeechToTextService {
   startListening(onSilence?: () => void): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!this.recognition) {
-        reject(new Error('Speech recognition not supported'));
+        reject(new Error('Speech recognition not supported. Please use Chrome or Edge browser.'));
         return;
       }
 
       if (this.isListening) {
-        reject(new Error('Already listening'));
+        console.log('Already listening, stopping previous session...');
+        this.stopListening();
+        // Wait a bit before starting new session
+        setTimeout(() => this.startListening(onSilence).then(resolve).catch(reject), 500);
         return;
       }
 
       this.isListening = true;
       let finalTranscript = '';
       let hasSpoken = false;
+      let silenceStartTime: number | null = null;
 
       // Clear any existing silence timer
       if (this.silenceTimer) {
         clearTimeout(this.silenceTimer);
         this.silenceTimer = null;
       }
+
+      console.log('🎤 Starting speech recognition...');
 
       this.recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
@@ -100,18 +107,21 @@ export class SpeechToTextService {
           const transcript = event.results[i][0].transcript;
           
           if (event.results[i].isFinal) {
-            finalTranscript += transcript;
+            finalTranscript += transcript + ' ';
             hasSpoken = true;
             this.lastSpeechTime = Date.now();
+            this.isUserSpeaking = false;
+            console.log('Final transcript:', transcript);
           } else {
             interimTranscript += transcript;
+            this.isUserSpeaking = true;
+            this.lastSpeechTime = Date.now();
+            console.log('Interim transcript:', transcript);
           }
         }
 
-        // User is actively speaking - clear silence timer and mark as speaking
-        if (interimTranscript.trim()) {
-          this.isUserSpeaking = true;
-          this.lastSpeechTime = Date.now();
+        // Clear silence timer when user speaks
+        if (interimTranscript.trim() || finalTranscript.trim()) {
           if (this.silenceTimer) {
             clearTimeout(this.silenceTimer);
             this.silenceTimer = null;
@@ -119,26 +129,79 @@ export class SpeechToTextService {
           hasSpoken = true;
         }
 
-        // User finished a phrase - start silence detection only after final result
+        // If we have final results, stop and return immediately
         if (finalTranscript.trim() && event.results[event.results.length - 1]?.isFinal) {
-          this.isUserSpeaking = false;
-          this.startSilenceDetection(onSilence);
+          this.cleanup();
+          resolve(finalTranscript.trim());
+          return;
         }
       };
 
       this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        this.cleanup();
-        reject(new Error(`Speech recognition error: ${event.error}`));
+        console.error('Speech recognition error:', event.error);
+        
+        // Handle different error types
+        if (event.error === 'not-allowed') {
+          this.cleanup();
+          reject(new Error('Microphone access denied. Please allow microphone permission.'));
+        } else if (event.error === 'no-speech') {
+          // No speech detected - trigger silence if callback exists
+          if (onSilence && !hasSpoken) {
+            this.cleanup();
+            onSilence();
+          } else {
+            // Restart listening if no callback
+            setTimeout(() => {
+              if (this.isListening) {
+                try {
+                  this.recognition?.start();
+                } catch (e) {
+                  console.log('Could not restart recognition');
+                }
+              }
+            }, 100);
+          }
+        } else {
+          this.cleanup();
+          reject(new Error(`Speech recognition error: ${event.error}`));
+        }
       };
 
       this.recognition.onend = () => {
-        if (this.isListening && finalTranscript.trim()) {
-          this.cleanup();
-          resolve(finalTranscript.trim());
-        } else if (this.isListening && !hasSpoken && onSilence) {
-          // User never spoke, trigger silence callback
-          this.cleanup();
-          onSilence();
+        console.log('Speech recognition ended');
+        if (this.isListening) {
+          if (finalTranscript.trim()) {
+            this.cleanup();
+            resolve(finalTranscript.trim());
+          } else if (!hasSpoken) {
+            // No speech detected, restart or trigger silence
+            if (onSilence) {
+              this.cleanup();
+              onSilence();
+            } else {
+              // Restart recognition
+              setTimeout(() => {
+                if (this.isListening) {
+                  try {
+                    this.recognition?.start();
+                  } catch (e) {
+                    console.log('Could not restart recognition');
+                  }
+                }
+              }, 100);
+            }
+          } else {
+            // Had interim results but no final - restart
+            setTimeout(() => {
+              if (this.isListening) {
+                try {
+                  this.recognition?.start();
+                } catch (e) {
+                  console.log('Could not restart recognition');
+                }
+              }
+            }, 100);
+          }
         }
       };
 
