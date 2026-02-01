@@ -37,7 +37,14 @@ export async function POST(request: NextRequest) {
     let systemPrompt = `You are an experienced AI interviewer conducting a ${interviewContext.type} interview for a ${interviewContext.role} position requiring ${interviewContext.level} experience level.
 The tech stack includes: ${interviewContext.techstack.join(", ")}.
 
-CRITICAL INTERVIEW FLOW RULES:
+CRITICAL INSTRUCTION: You are conducting a VOICE interview. Keep ALL responses under 15 words. Be conversational and brief. Let the candidate do most of the talking.
+
+IMPORTANT: READ THE CANDIDATE'S LAST MESSAGE CAREFULLY. Your response must directly relate to what they just said. If they mention:
+- Learning HTML/CSS → Ask about their learning journey or what they're building
+- A specific project → Ask about challenges or technologies used
+- Experience with a technology → Ask for specific examples
+- A problem or challenge → Ask how they solved it
+
 1. ALWAYS respond as the interviewer, never as the candidate
 2. Ask ONE question at a time and wait for response
 3. Keep responses conversational and natural for voice interaction (max 25-35 words)
@@ -57,7 +64,13 @@ Current Interview Stage: ${
         : "Late (Advanced/Wrap-up) - Ask challenging questions and wrap up"
     }
 
-CONVERSATION CONTEXT: Look at the conversation history carefully. The candidate just said something specific - your response should directly relate to what they mentioned. Show you were listening by referencing their exact words or experiences they shared.
+CONVERSATION CONTEXT: The candidate just said: "${message}"
+
+Your response must:
+- Acknowledge what they specifically mentioned
+- Ask a direct follow-up about their answer (not a generic question)
+- Be encouraging about their current level/learning
+- Keep it under 15 words
 
 Your interviewer personality:
 - Professional but warm and encouraging
@@ -71,24 +84,22 @@ Interview Questions to guide conversation (adapt and personalize based on their 
 ${interviewContext.questions.map((q: string, i: number) => `${i + 1}. ${q}`).join("\n")}
 
 Response Guidelines:
-- Keep responses between 25-35 words for natural voice conversation
+- CRITICAL: Keep responses under 20 words maximum - this is a voice conversation, not a written interview
+- Use simple, direct language - no long explanations or multiple sentences
+- Ask ONE simple question at a time
 - Do not use special characters like *, /, or markdown formatting
-- Ask follow-up questions that show you were listening to their answer
-- Be encouraging and positive - acknowledge good points before moving on
-- Reference specific things they mentioned in their previous response
-- If they mention a project, ask about challenges, technologies, or outcomes
-- If they mention experience, ask for specific examples or details
+- Be brief and to the point - candidates need space to talk
+- Reference ONE specific thing they mentioned, then ask a short follow-up
+- Examples of good responses: "That's great! What challenges did you face?" or "Interesting! Tell me more about that project."
+- Examples of bad responses: Long explanations, multiple questions, or generic responses that don't relate to what they said
+- ALWAYS reference something specific from their answer
+- Use natural transitions like "That sounds..." "I see you're..." "Tell me more about..."
 - Build rapport by acknowledging their expertise and experiences
 - Use natural transitions like "That's interesting..." or "I'd love to hear more about..."
 - End questions with their name occasionally to keep it personal`;
 
-    if (message.includes("[SILENCE_DETECTED]")) {
-      systemPrompt += `\n\nSPECIAL SITUATION: The candidate paused for 3+ seconds. Please:
-- Gently encourage them ("Take your time" or "No rush")
-- Rephrase the current question if needed
-- Ask a simpler follow-up question
-- Keep the conversation flowing naturally
-- Show patience and understanding`;
+    if (message.includes("[PAUSE_DETECTED]")) {
+      systemPrompt += `\n\nSPECIAL: Candidate paused 2.5 seconds. Give a brief 8-10 word encouragement like "Take your time" or "What do you think?" or rephrase the question in 10 words or less.`;
     }
 
     const messages = [
@@ -104,7 +115,7 @@ Response Guidelines:
         })),
       {
         role: "user" as const,
-        content: message.trim(),
+        content: `CANDIDATE RESPONSE: "${message.trim()}"\n\nGive a brief, contextual follow-up question (under 15 words) that directly relates to what they just said.`,
       },
     ];
 
@@ -132,7 +143,7 @@ Response Guidelines:
       .map((msg) => `${msg.role === "user" ? "Candidate" : msg.role === "system" ? "System" : "Interviewer"}: ${msg.content}`)
       .join("\n");
 
-    const res = await fetch("http://localhost:11434/api/generate", {
+    const res = await fetch("http://127.0.0.1:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -158,11 +169,17 @@ Response Guidelines:
       .replace(/\n+/g, " ")
       .trim();
 
-    console.log("📤 Sending response back to client");
+    // Enforce maximum word limit for voice conversations
+    const words = cleanedResponse.split(' ');
+    const truncatedResponse = words.length > 20 
+      ? words.slice(0, 20).join(' ') + '...'
+      : cleanedResponse;
+
+    console.log("📤 Sending response back to client. Words:", words.length);
     
     return Response.json({
       success: true,
-      response: cleanedResponse,
+      response: truncatedResponse,
       timestamp: new Date().toISOString(),
       interviewStage: isEarlyInterview ? "early" : isMidInterview ? "mid" : "late",
       totalUserResponses: userResponses,

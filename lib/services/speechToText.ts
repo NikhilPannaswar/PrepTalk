@@ -50,7 +50,7 @@ export class SpeechToTextService {
   private recognition: SpeechRecognition | null = null;
   private isListening = false;
   private silenceTimer: NodeJS.Timeout | null = null;
-  private silenceThreshold = 3000; // 3 seconds of silence
+  private silenceThreshold = 2500; // 2.5 seconds of silence as requested
   private isUserSpeaking = false;
   private lastSpeechTime: number = 0;
 

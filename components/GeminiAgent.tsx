@@ -101,7 +101,7 @@ const OllamaAgent = ({
       setStatus(ConversationStatus.SPEAKING);
       setIsSpeaking(true);
       
-      const introMessage = `Hello ${userName}! I'm your AI interviewer, and I'm excited to conduct your ${interviewType} interview for the ${role} position today. I see you have experience with ${techstack.slice(0, 2).join(' and ')}. This will be a conversational interview where I'll ask you questions and we can have a natural discussion. Let's begin! Please start by introducing yourself and telling me about your background.`;
+      const introMessage = `Hello ${userName}! I'm excited to interview you for the ${role} position today. Let's start - tell me about your background with ${techstack.slice(0, 1).join('')}.`;
       
       setCurrentMessage(introMessage);
       
@@ -134,14 +134,14 @@ const OllamaAgent = ({
       setStatus(ConversationStatus.LISTENING);
       setIsListening(true);
       setError(""); // Clear any previous errors
-      setCurrentMessage("🎤 I'm listening... Please speak clearly and take your time to answer completely.");
+      setCurrentMessage("🎤 I'm listening... I'll continue after 2.5 seconds of silence.");
       
-      // Handle silence detection - AI continues if user doesn't speak for 3 seconds
+      // Handle silence detection - AI continues if user doesn't speak for 2.5 seconds
       const handleSilence = async () => {
-        console.log("⏱️ Silence detected - AI taking over conversation");
+        console.log("⏱️ Silence detected after 2.5 seconds - AI taking over conversation");
         setIsListening(false);
         setStatus(ConversationStatus.SILENCE_DETECTED);
-        setCurrentMessage("I see you're thinking... Let me help guide the conversation.");
+        setCurrentMessage("I see you're taking a moment to think... Let me help guide the conversation.");
         
         // Short delay to show silence detection
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -151,10 +151,10 @@ const OllamaAgent = ({
           
           if (conversationManager.current) {
             try {
-              console.log("🤖 Asking AI to handle silence");
+              console.log("🤖 Asking AI to handle 2.5s silence");
               const response = await conversationManager.current.sendMessageToOllama(
                 interviewId!,
-                "[SILENCE_DETECTED] The candidate paused. Please continue the conversation by either rephrasing the question, providing encouragement, or asking a follow-up question to keep the interview flowing naturally.",
+                "[PAUSE_DETECTED] The candidate paused for 2.5 seconds after the last question. Please continue the conversation naturally by either: 1) Gently encouraging them to elaborate, 2) Rephrasing the question in a simpler way, 3) Asking a related follow-up question, or 4) Moving to the next topic if they seem to have finished their response. Keep it conversational and supportive.",
                 interviewContext,
                 userName
               );
@@ -183,8 +183,8 @@ const OllamaAgent = ({
 
       try {
         // Start listening with silence detection
-        console.log("🔊 Setting up speech recognition");
-        sttService.current.setSilenceThreshold(3000); // 3 seconds for better flow
+        console.log("🔊 Setting up speech recognition with 2.5s silence detection");
+        sttService.current.setSilenceThreshold(2500); // 2.5 seconds for responsive flow
         const userInput = await sttService.current.startListening(handleSilence);
         
         // If we got actual user input (not silence)

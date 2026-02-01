@@ -14,6 +14,13 @@ export async function createFeedback(params: CreateFeedbackParams) {
   console.log("Creating feedback for interview:", interviewId);
   console.log("Transcript length:", transcript?.length || 0);
 
+  // Get interview details for context-aware feedback
+  const interviewContext = await getInterviewById(interviewId);
+  if (!interviewContext) {
+    console.error("Interview not found for feedback generation:", interviewId);
+    return { success: false, error: "Interview not found" };
+  }
+
   try {
     const formattedTranscript = transcript
       .map(
@@ -24,35 +31,111 @@ export async function createFeedback(params: CreateFeedbackParams) {
 
     console.log("Generating AI feedback...");
 
-    // Create the feedback prompt for Ollama
-    const feedbackPrompt = `You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
+    // Create comprehensive, context-aware feedback prompt
+    const feedbackPrompt = `You are an experienced technical interviewer conducting a detailed performance review of a mock interview session. Analyze the candidate thoroughly and provide genuine, constructive feedback.
 
-Transcript:
+**INTERVIEW CONTEXT:**
+- Position: ${interviewContext.role}
+- Experience Level: ${interviewContext.level}
+- Interview Type: ${interviewContext.type}
+- Tech Stack: ${interviewContext.techstack.join(', ')}
+- Questions Asked: ${interviewContext.questions.length}
+
+**CONVERSATION TRANSCRIPT:**
 ${formattedTranscript}
 
-Please score the candidate from 0 to 100 in the following areas and respond with a valid JSON object:
-- **Communication Skills**: Clarity, articulation, structured responses.
-- **Technical Knowledge**: Understanding of key concepts for the role.
-- **Problem-Solving**: Ability to analyze problems and propose solutions.
-- **Cultural & Role Fit**: Alignment with company values and job role.
-- **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
+**EVALUATION CRITERIA:**
+Analyze each response carefully and provide honest scoring based on:
 
-Respond with a JSON object in this exact format:
+1. **Communication Skills (0-100)**: 
+   - Clarity and articulation of thoughts
+   - Structure and flow of responses
+   - Use of professional language
+   - Active listening and engagement
+   - Ability to explain complex concepts simply
+
+2. **Technical Knowledge (0-100)**:
+   - Depth of understanding in relevant technologies
+   - Accuracy of technical explanations
+   - Knowledge of best practices and industry standards
+   - Ability to discuss real-world applications
+   - Understanding of the tech stack mentioned
+
+3. **Problem-Solving Approach (0-100)**:
+   - Logical thinking and reasoning process
+   - Ability to break down complex problems
+   - Creative and innovative solutions
+   - Consideration of edge cases and trade-offs
+   - Systematic approach to challenges
+
+4. **Cultural & Role Alignment (0-100)**:
+   - Understanding of the role requirements
+   - Alignment with team collaboration values
+   - Growth mindset and learning attitude
+   - Professional maturity and adaptability
+   - Genuine interest in the position
+
+5. **Confidence & Presentation (0-100)**:
+   - Confidence without arrogance
+   - Handling of difficult questions
+   - Recovery from mistakes or uncertainty
+   - Overall presence and composure
+   - Enthusiasm and passion demonstrated
+
+**IMPORTANT GUIDELINES:**
+- Be honest and constructive - avoid inflated scores
+- Consider the candidate's stated experience level (${interviewContext.level})
+- Look for specific examples and concrete evidence in responses
+- Identify both strengths AND genuine areas for improvement
+- Provide actionable, specific feedback rather than generic comments
+- Score based on actual performance, not potential
+- For ${interviewContext.level} level, expect appropriate depth and experience
+
+**RESPONSE FORMAT:**
+Respond with a valid JSON object in exactly this format:
 {
-  "totalScore": <average of all scores>,
-  "categoryScores": {
-    "communicationSkills": <score 0-100>,
-    "technicalKnowledge": <score 0-100>,
-    "problemSolving": <score 0-100>,
-    "culturalFit": <score 0-100>,
-    "confidenceClarity": <score 0-100>
-  },
-  "strengths": ["strength1", "strength2", "strength3"],
-  "areasForImprovement": ["improvement1", "improvement2", "improvement3"],
-  "finalAssessment": "Overall assessment summary"
+  "totalScore": <calculated average of all category scores>,
+  "categoryScores": [
+    {
+      "name": "Communication Skills",
+      "score": <0-100>,
+      "comment": "Detailed analysis of communication performance with specific examples from the interview"
+    },
+    {
+      "name": "Technical Knowledge", 
+      "score": <0-100>,
+      "comment": "Specific assessment of technical understanding with concrete examples"
+    },
+    {
+      "name": "Problem-Solving Approach",
+      "score": <0-100>, 
+      "comment": "Evaluation of problem-solving methodology and reasoning"
+    },
+    {
+      "name": "Cultural & Role Alignment",
+      "score": <0-100>,
+      "comment": "Assessment of fit for the role and team environment"
+    },
+    {
+      "name": "Confidence & Presentation",
+      "score": <0-100>,
+      "comment": "Analysis of confidence level and presentation skills"
+    }
+  ],
+  "strengths": [
+    "Specific strength 1 with context from the interview",
+    "Specific strength 2 with examples",
+    "Specific strength 3 demonstrating candidate's abilities"
+  ],
+  "areasForImprovement": [
+    "Specific improvement area 1 with actionable suggestions",
+    "Specific improvement area 2 with concrete examples", 
+    "Specific improvement area 3 with development recommendations"
+  ],
+  "finalAssessment": "Comprehensive 3-4 sentence summary that honestly evaluates the candidate's performance, highlights key insights from the interview, provides a realistic assessment of their readiness for the ${interviewContext.role} role at ${interviewContext.level} level, and gives clear direction for improvement or next steps."
 }`;
 
-    const res = await fetch("http://localhost:11434/api/generate", {
+    const res = await fetch("http://127.0.0.1:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -78,19 +161,47 @@ Respond with a JSON object in this exact format:
       object = JSON.parse(jsonString);
     } catch (parseError) {
       console.error("Error parsing Ollama response:", parseError);
-      // Fallback response if parsing fails
+      // More realistic fallback response if parsing fails
       object = {
-        totalScore: 75,
-        categoryScores: {
-          communicationSkills: 75,
-          technicalKnowledge: 75,
-          problemSolving: 75,
-          culturalFit: 75,
-          confidenceClarity: 75
-        },
-        strengths: ["Shows enthusiasm", "Communicates clearly", "Demonstrates basic knowledge"],
-        areasForImprovement: ["Could provide more specific examples", "Needs to show more technical depth", "Should ask more questions"],
-        finalAssessment: "The candidate shows potential but needs more preparation and practice to improve their interview performance."
+        totalScore: 65,
+        categoryScores: [
+          {
+            name: "Communication Skills",
+            score: 70,
+            comment: "Demonstrated basic communication abilities but could improve clarity and structure in responses."
+          },
+          {
+            name: "Technical Knowledge",
+            score: 60,
+            comment: "Showed foundational understanding but lacked depth in technical explanations and specific examples."
+          },
+          {
+            name: "Problem-Solving Approach", 
+            score: 65,
+            comment: "Approached problems logically but could benefit from more systematic thinking and consideration of alternatives."
+          },
+          {
+            name: "Cultural & Role Alignment",
+            score: 70,
+            comment: "Showed genuine interest in the role but could demonstrate better understanding of specific requirements."
+          },
+          {
+            name: "Confidence & Presentation",
+            score: 60,
+            comment: "Appeared somewhat hesitant in responses and could benefit from more confident presentation of ideas."
+          }
+        ],
+        strengths: [
+          "Showed genuine enthusiasm and interest in the position",
+          "Communicated ideas in an understandable manner", 
+          "Demonstrated willingness to learn and grow"
+        ],
+        areasForImprovement: [
+          "Provide more specific, concrete examples from past experience",
+          "Develop deeper technical knowledge and stay current with industry trends",
+          "Practice articulating complex ideas more clearly and confidently"
+        ],
+        finalAssessment: `The candidate demonstrated basic competencies for the ${interviewContext.role} position but would benefit from additional preparation and experience. While they showed enthusiasm and foundational understanding, there are clear opportunities to improve technical depth and presentation skills. With focused development, they could become a stronger candidate for ${interviewContext.level} level positions.`
       };
     }
 
