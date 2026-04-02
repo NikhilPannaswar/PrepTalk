@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
+import CameraFeed from "./CameraFeed";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -166,13 +167,7 @@ const Agent = ({
         {/* User Profile Card */}
         <div className="card-border">
           <div className="card-content">
-            <Image
-              src="/user-avatar.png"
-              alt="profile-image"
-              width={539}
-              height={539}
-              className="rounded-full object-cover size-[120px]"
-            />
+            <CameraFeed className="rounded-full object-cover size-[240px]" />
             <h3>{userName}</h3>
           </div>
         </div>

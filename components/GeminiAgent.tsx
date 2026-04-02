@@ -9,6 +9,7 @@ import { SpeechToTextService } from "@/lib/services/speechToText";
 import { TextToSpeechService } from "@/lib/services/textToSpeech";
 import { ConversationManager, InterviewContext } from "@/lib/services/conversationManager";
 import { createFeedback } from "@/lib/actions/general.action";
+import CameraFeed from "./CameraFeed";
 
 enum ConversationStatus {
   INACTIVE = "INACTIVE",
@@ -451,13 +452,7 @@ const OllamaAgent = ({
         {/* User Profile Card */}
         <div className="card-border">
           <div className="card-content">
-            <Image
-              src="/user-avatar.png"
-              alt="User"
-              width={539}
-              height={539}
-              className="rounded-full object-cover size-[120px]"
-            />
+            <CameraFeed className="rounded-full object-cover size-[240px]" />
             <h3>{userName}</h3>
             {isListening && (
               <div className="flex items-center gap-2 mt-2">
