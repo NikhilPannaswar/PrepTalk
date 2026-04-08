@@ -63,7 +63,7 @@ export class SpeechToTextService {
         this.recognition.continuous = false; // Changed to false for better control
         this.recognition.interimResults = true; // Get partial results
         this.recognition.lang = 'en-US';
-        this.recognition.maxAlternatives = 1;
+        (this.recognition as any).maxAlternatives = 1;
       }
     }
   }

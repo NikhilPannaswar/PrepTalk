@@ -1,0 +1,120 @@
+
+> placement_ai@0.1.0 build
+> next build
+
+   Γû▓ Next.js 15.3.5
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 4.0s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/(root)/interview/page.tsx
+22:73  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(root)/interview/[id]/feedback/page.tsx
+3:8  Error: 'Image' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/(root)/interview-new/page.tsx
+19:9  Error: 'handleInterviewComplete' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+45:76  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/(root)/page.tsx
+17:27  Error: Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong.  @typescript-eslint/no-non-null-asserted-optional-chain
+18:35  Error: Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong.  @typescript-eslint/no-non-null-asserted-optional-chain
+21:29  Error: Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong.  @typescript-eslint/no-non-null-asserted-optional-chain
+22:33  Error: Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong.  @typescript-eslint/no-non-null-asserted-optional-chain
+
+./app/(root)/test/page.tsx
+90:31  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+90:53  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+96:31  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+96:45  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./app/api/conversation/route.ts
+21:61  Error: 'userName' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./app/api/interview/health/route.ts
+23:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/api/interview/start/route.ts
+21:11  Error: 'state' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/AuthForm.tsx
+60:24  Error: 'password' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./components/CameraFeed.tsx
+54:6  Warning: React Hook useEffect has a missing dependency: 'stream'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/FormField.tsx
+4:3  Error: 'FormDescription' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./components/GeminiAgent.tsx
+3:8  Error: 'Image' is defined but never used.  @typescript-eslint/no-unused-vars
+7:10  Error: 'cn' is defined but never used.  @typescript-eslint/no-unused-vars
+516:29  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+538:33  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./components/InterviewManager.tsx
+109:14  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./components/InterviewSetup.tsx
+414:59  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./components/SpeechDebugTester.tsx
+29:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+89:44  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+89:62  Error: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./lib/actions/auth.action.ts
+8:35  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+32:18  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+43:20  Error: 'idToken' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+46:65  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:18  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+80:40  Error: 'idToken' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/actions/general.action.ts
+3:10  Error: 'feedbackSchema' is defined but never used.  @typescript-eslint/no-unused-vars
+7:5  Error: 'interviewStorage' is never reassigned. Use 'const' instead.  prefer-const
+8:5  Error: 'feedbackStorage' is never reassigned. Use 'const' instead.  prefer-const
+9:5  Error: 'feedbackUserMapping' is never reassigned. Use 'const' instead.  prefer-const
+254:24  Error: 'userId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+264:15  Error: 'feedbackId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+276:3  Error: 'params' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services/evaluationEngine.ts
+71:11  Error: 'score' is never reassigned. Use 'const' instead.  prefer-const
+
+./lib/services/feedbackGenerator.ts
+4:7  Error: 'ollamaService' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+54:11  Error: 'strengths' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+132:48  Error: 'evaluationHistory' is defined but never used.  @typescript-eslint/no-unused-vars
+133:11  Error: 'weakArea' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services/interviewSessionManager.ts
+96:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+97:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/ollamaService.ts
+11:5  Error: 'maxTokens' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+81:20  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services/questionGenerator.ts
+1:10  Error: 'InterviewState' is defined but never used.  @typescript-eslint/no-unused-vars
+117:16  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/services/speechToText.ts
+15:71  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:75  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:1  Error: Unexpected var, use let or const instead.  no-var
+66:30  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+93:11  Error: 'silenceStartTime' is never reassigned. Use 'const' instead.  prefer-const
+93:11  Error: 'silenceStartTime' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+158:26  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+187:28  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+199:26  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

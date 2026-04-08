@@ -52,8 +52,8 @@ const InterviewDetails = async ({ params }: RouteParams) => {
       </div>
 
       <OllamaAgent
-        userName={user?.name!}
-        userId={user?.id}
+        userName={mockUser.name}
+        userId={mockUser.id}
         interviewId={id}
         type="interview"
         questions={interview.questions}
