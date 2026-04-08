@@ -139,7 +139,7 @@ Respond with a valid JSON object in exactly this format:
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "mistral",
+        model: "phi3:mini",
         prompt: feedbackPrompt,
         stream: false,
       }),
